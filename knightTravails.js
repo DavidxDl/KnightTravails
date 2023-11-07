@@ -1,15 +1,14 @@
-const boardSize = 8
-
+const boardSize = 8;
 class Knight {
     constructor() {
-        this.possibleMoves = [ 
+        this.possibleMoves = [
             [-2, -1], [-2, 1],
             [-1, -2], [-1, 2],
             [1, -2], [1, 2],
             [2, -1], [2, 1]
         ];
     }
-    
+
     getLegalMoves(currentX, currentY) {
         const validMoves = [];
         for (const [possibleX, possibleY] of this.possibleMoves) {
@@ -23,50 +22,54 @@ class Knight {
     }
 }
 
-function knightTraveils([startX, startY], [targetX, targetY]) {
+function createChessboardGraph(boardSize) {
+    const graph = new Map();
     const knight = new Knight();
-    const queue = [[startX, startY]];
-    const visited = Array.from({ length: boardSize }, () => Array(boardSize).fill(false));
-    visited[startX][startY] = true;
-    
-    const paths = {}; // Use an object to store the path to each position
+    for (let x = 0; x < boardSize; x++) {
+        for (let y = 0; y < boardSize; y++) {
+            const node = `${[x, y]}`;
+            graph.set(node, knight.getLegalMoves(x, y));
+        }
+    }
+    return graph;
+}
+
+function findFastestRoute([startX, startY], [targetX, targetY]) {
+    const boardSize = 8;
+    const graph = createChessboardGraph(boardSize);
+
+    const startNode = [startX, startY];
+    const targetNode = [targetX, targetY];
+
+    const visited = new Set();
+    const queue = [[startNode]];
+    visited.add(startNode);
 
     while (queue.length > 0) {
-        const [currentX, currentY] = queue.shift();
-        if (currentX === targetX && currentY === targetY) {
-            // Reconstruct the path from the target position to the starting position
-            const path = [];
-            let x = targetX, y = targetY;
-            while (x !== startX || y !== startY) {
-                path.unshift([x, y]);
-                const [prevX, prevY] = paths[`${x}-${y}`];
-                x = prevX;
-                y = prevY;
-            }
-            path.unshift([startX, startY]);
+        const path = queue.shift();
+        const currentNode = path[path.length - 1];
 
-            //output results
-            console.log(`You Made it in ${path.length -1} moves! Here's your path:`);
-            for (const move of path) {
-                console.log(move)
-            }
-            return
+        if (currentNode[0] === targetNode[0] && currentNode[1] === targetNode[1]) {
+            return path;
         }
 
-        const validMoves = knight.getLegalMoves(currentX, currentY);
-
-        for (const [newX, newY] of validMoves) {
-            if (!visited[newX][newY]) {
-                visited[newX][newY] = true;
-                queue.push([newX, newY]);
-                paths[`${newX}-${newY}`] = [currentX, currentY]; // Store the previous position
+        for (const neighbor of graph.get(`${currentNode}`)) {
+            if (!visited.has(neighbor)) {
+                visited.add(neighbor);
+                const newPath = path.slice(); // Clone the path array
+                newPath.push(neighbor);
+                queue.push(newPath);
             }
         }
     }
 
-    // If no path is found, return an empty array or some other value to indicate failure.
     return [];
 }
 
-
-
+// Usage:
+const startX = 0;
+const startY = 0;
+const targetX = 2;
+const targetY = 1;
+const path = findFastestRoute([startX, startY], [targetX, targetY]);
+console.log("Fastest path:", path);
